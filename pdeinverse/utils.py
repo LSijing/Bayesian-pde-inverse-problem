@@ -39,5 +39,5 @@ def compute_PCA(X, mean=True, k=0, A=None, normalize=True):
     else:
         phi[:, 1:] = X @ v[:, 0:k]
         s2 = 'unnormalized eigenvectors'
-    print('Done PCA : (X %d-by-%d)' % (n, m) + s2 + ' ' + s1 + '. ' + s3 + ' + %d dominant eigenvectors' % (k))
+    # print('Done PCA : (X %d-by-%d)' % (n, m) + s2 + ' ' + s1 + '. ' + s3 + ' + %d dominant eigenvectors' % (k))
     return phi, w
