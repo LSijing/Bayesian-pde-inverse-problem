@@ -56,8 +56,7 @@ def solve_from_normal_input(inputs, inv_pde: dict, derivative=0):
     A11 = stiff_mat.tocsr()[free_node, :][:, free_node]
     n = free_node.size + fixed_node.size
     u = np.zeros(n)
-    u[fixed_node] = np.array(
-        [inv_pde['g_D'](points[fixed_node[i], 0], points[fixed_node[i], 1]) for i in range(fixed_node.size)])
+    u[fixed_node] = inv_pde['g_D']
     u[free_node] = spsolve(A11, (-stiff_mat.tocsr() @ u)[free_node])
     if derivative == 0:
         return u
@@ -143,7 +142,7 @@ def hmc_evolve(hmc_inv_pde: dict, num_of_iter: int, state: str, start_theta, ste
 
         # Hamiltonian dynamics with leap frog
         random_num_leap_forg = np.random.choice(num_of_leap_frog_steps) + 1
-        for _ in range(random_num_leap_forg):
+        for _ in range(num_of_leap_frog_steps):
             proposed_momentum -= step_size / 2 * compute_potential(inputs=proposed_theta, hmc_inv_pde=hmc_inv_pde, order=1)
             proposed_theta += step_size * proposed_momentum
             proposed_momentum -= step_size / 2 * compute_potential(inputs=proposed_theta, hmc_inv_pde=hmc_inv_pde, order=1)

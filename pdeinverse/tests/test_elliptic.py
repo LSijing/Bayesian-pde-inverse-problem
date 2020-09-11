@@ -78,6 +78,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(pde['free_node'].size + pde['fixed_node'].size, (n+1) ** 2)
         self.assertEqual(pde['center'].shape, (n ** 2 * 2, 2))
         self.assertEqual(np.allclose(np.concatenate((xc_elem, yc_elem), axis=1), pde['center']), True)
+        self.assertEqual(pde['g_D'].shape, (2 * n + 2, ))
 
 if __name__ == '__main__':
     unittest.main()

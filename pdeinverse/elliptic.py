@@ -194,12 +194,13 @@ def compute_pde_dictionary(n: int, domain=(0, 0, 1, 1)):
     output:
         a dictionary with 'free_node', 'fixed_node', 'tris', 'points', 'center' representing the triangulation and boundary
     """
-    g_D = lambda x, y: x * (y < 1e-6) + (1 - x) * (y > 1 - 1e-6) + 0.0
+    func = lambda x, y: x * (y < 1e-6) + (1 - x) * (y > 1 - 1e-6) + 0.0
     points, tris, edges, x_mesh, y_mesh = compute_uniform_triangulation_vmatlab(n)
     fixed_node = np.where((points[:, 1] < 1e-6) | (points[:, 1] > 1 - 1e-6))[0]
     free_node = np.delete(np.arange((n + 1) ** 2), fixed_node)
     xc = (points[tris[:, 0], 0:1] + points[tris[:, 1], 0:1] + points[tris[:, 2], 0:1]) / 3
     yc = (points[tris[:, 0], 1:2] + points[tris[:, 1], 1:2] + points[tris[:, 2], 1:2]) / 3
     center = np.concatenate((xc, yc), axis=1)
+    g_D = np.array([func(points[fixed_node[i], 0], points[fixed_node[i], 1]) for i in range(fixed_node.size)])
     pde = {'points': points, 'tris': tris, 'free_node': free_node, 'fixed_node': fixed_node, 'center': center, 'g_D': g_D}
     return pde

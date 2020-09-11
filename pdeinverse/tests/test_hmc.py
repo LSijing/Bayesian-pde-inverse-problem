@@ -35,6 +35,8 @@ class MyTestCase(unittest.TestCase):
         y = observe_mat @ u + np.random.randn((n // 2 + 1) ** 2) * inv_pde['noise_ob']
         inputs = np.array([0, 0, 1, -1, 0], dtype=np.float)
         hmc_inv_pde = hmc.compute_hmc_dictionary(inv_pde=inv_pde, observe_mat=observe_mat, y=y)
+        print(hmc_inv_pde.keys())
+        print(list(map(type, hmc_inv_pde.values())))
         self.assertEqual(np.allclose(hmc_inv_pde['observe_mat'].toarray(), observe_mat.toarray()), True)
         self.assertEqual(np.allclose(hmc_inv_pde['y'], y), True)
         # test compute potential
