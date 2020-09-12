@@ -28,7 +28,7 @@ f.close()
 # train data-driven solver
 net = hmc_dd.SolutionMap(size_in=hmc_inv_pde['kl_ndim'], size_out=num_sol_basis, size_hidden=20)
 net.double()
-net, train_time, train_loss, dev_loss = hmc_dd.trainit(net, training_data['x'], training_data['y_sol'], opt='Adam', epochs=2000, lr=0.1, num_iter=6)
+net, train_time, train_loss, dev_loss = hmc_dd.trainit(net, training_data['x'], training_data['y_sol'], opt='Adam', epochs=2000, lr=0.01, num_iter=6)
 net_grad = []
 # for i in range(num_kl):
 #     print('------------------------------\n start training', i, '-th partial derivative')
