@@ -18,11 +18,11 @@ class SolutionMap(nn.Module):
         # self.l4 = nn.Linear(self.size,self.size)
         # self.l5 = nn.Linear(self.size,self.size)
         self.out = nn.Linear(self.size, size_out)
-        self.acti = F.relu
+        self.acti = F.tanh
 
     def forward(self, x):
         y = self.inp(x)
-        y = self.acti(self.l1(y))
+        y = self.acti(self.l1(y)) + y
         y = self.acti(self.l2(y)) + y
         y = self.acti(self.l3(y)) + y
         # y = self.acti(self.l4(y))+y
@@ -40,11 +40,11 @@ class GradientMap(nn.Module):
         self.l2 = nn.Linear(size_hidden, size_hidden)
         self.l3 = nn.Linear(size_hidden, size_hidden)
         self.out = nn.Linear(size_hidden, size_out)
-        self.acti = F.relu
+        self.acti = F.tanh
 
     def forward(self, x):
         y = self.inp(x)
-        y = self.acti(self.l1(y))
+        y = self.acti(self.l1(y)) + y
         y = self.acti(self.l2(y)) + y
         y = self.acti(self.l3(y)) + y
         y = self.out(y)
@@ -174,8 +174,8 @@ def trainit(net, x_train, y_train, opt='Adam', epochs=100, lr=0.02, num_iter=5):
             train_time_series = np.concatenate([train_time_series, np.array(i * epochs + j + 1).reshape(1)])
             train_loss_series = np.concatenate((train_loss_series, ((net(train_x) - train_y) ** 2).mean(1).mean().detach().numpy().reshape(1)), 0)
             dev_loss_series = np.concatenate((dev_loss_series, ((net(dev_x) - dev_y) ** 2).mean(1).mean().detach().numpy().reshape(1)), 0)
-            if (j%(epochs//2)==epochs//2-1):
-                print('loss ### %.8f ### %.8f ### %.8f'%(loss.item(),train_loss_series[-1], dev_loss_series[-1]))
+            if (j%(epochs//5)==epochs//5-1):
+                print('%d, loss ### %.8f ### %.8f ### %.8f'%(i*epochs+j+1, loss.item(),train_loss_series[-1], dev_loss_series[-1]))
 
     return net, train_time_series, train_loss_series, dev_loss_series
 
