@@ -44,6 +44,18 @@ class MyTestCase(unittest.TestCase):
         dloglik = hmc.compute_potential(inputs=inputs, hmc_inv_pde=hmc_inv_pde, order=1)
         print(loglik, dloglik)
 
+        # test hmc evolve
+        theta_after_burnin, acp_num, timer, x_data, sol_data, sol_grad_data, potential_data = hmc.hmc_evolve(
+            hmc_inv_pde=hmc_inv_pde, num_of_iter=50, state='burnin', start_theta=np.zeros(inputs.shape))
+        training_size = int(sum(acp_num))
+        self.assertEqual(theta_after_burnin.shape, inputs.shape)
+        self.assertEqual(timer.shape, (len(acp_num),))
+        self.assertEqual(x_data.shape, (kl_dim, training_size))
+        self.assertEqual(sol_data.shape, ((n+1)**2, training_size))
+        self.assertEqual(sol_grad_data.shape, ((n+1)**2, kl_dim, training_size))
+        self.assertEqual(potential_data.shape, (1, training_size))
+
+
 
 if __name__ == '__main__':
     unittest.main()

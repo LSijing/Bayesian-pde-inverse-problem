@@ -18,20 +18,20 @@ hmc_inv_pde = hmc.compute_hmc_dictionary(inv_pde=pde_dict, observe_mat=observe_m
 
 leap_frog_step_num = 10
 step_size = 0.16
-total_iter_num = 50000
-burn_in_num = 10000
+total_iter_num = 500
+burn_in_num = 1000
 start_theta = np.zeros(num_kl)
 num_sol_basis = 20
 num_grad_basis = 40
 
 # burn-in, collect and process training data
-theta_after_burnin, acp_num_burnin, timer_burnin, x_data, sol_data, sol_grad_data = hmc.hmc_evolve(hmc_inv_pde=hmc_inv_pde, num_of_iter=burn_in_num, state='burnin', start_theta=start_theta)
+theta_after_burnin, acp_num_burnin, timer_burnin, x_data, sol_data, sol_grad_data, potential_data = hmc.hmc_evolve(hmc_inv_pde=hmc_inv_pde, num_of_iter=burn_in_num, state='burnin', start_theta=start_theta)
 mass_mat = elliptic.compute_mass_matrix(tris=hmc_inv_pde['tris'], points=hmc_inv_pde['points'])
 training_data, basis_data = hmc_dd.process_training_data(x_data, sol_data, sol_grad_data, mass_mat=mass_mat, num_sol_basis=num_sol_basis, num_grad_basis=num_grad_basis)
 
 # save burn-in data into '.npz' file for data-driven use
-np.savez('burnin_data', theta_after_burnin=theta_after_burnin, acp_num_burnin=acp_num_burnin, timer_burnin=timer_burnin,
-x_data=x_data, sol_data=sol_data, sol_grad_data=sol_grad_data, leap_frog_step_num=leap_frog_step_num, step_size=step_size,
+np.savez('burnin_data_'+time.strftime("%Y_%m_%d_%H", time.gmtime()), theta_after_burnin=theta_after_burnin, acp_num_burnin=acp_num_burnin, timer_burnin=timer_burnin,
+x_data=x_data, sol_data=sol_data, sol_grad_data=sol_grad_data, potential_data=potential_data, leap_frog_step_num=leap_frog_step_num, step_size=step_size,
 burn_in_num=burn_in_num, num_sol_basis=num_sol_basis, num_grad_basis=num_grad_basis, basis_data=basis_data, training_data=training_data,
 hmc_inv_pde=hmc_inv_pde)
 

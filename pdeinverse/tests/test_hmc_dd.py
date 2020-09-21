@@ -102,7 +102,7 @@ class MyTestCase(unittest.TestCase):
                                                       num_of_leap_frog_steps=leap_frog_step_num)
         self.assertEqual(theta_samples.shape, (num_kl, total_iter_num))
         self.assertEqual(timer.size, total_iter_num)
-        self.assertEqual(len(acp), total_iter_num + 1)
+        self.assertEqual(len(acp), total_iter_num)
 
 
 if __name__ == '__main__':

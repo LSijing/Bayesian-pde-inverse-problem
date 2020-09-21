@@ -121,7 +121,7 @@ def compute_potential(inputs, hmc_inv_pde: dict, order=0, sol_required=False):
 
 def hmc_evolve(hmc_inv_pde: dict, num_of_iter: int, state: str, start_theta, step_size: float = 0.16,
                num_of_leap_frog_steps: int = 10):
-    acp_num = [0]
+    acp_num = []
     timer = np.zeros(num_of_iter)
     current_theta = copy.copy(start_theta)
     current_potential = compute_potential(inputs=current_theta, hmc_inv_pde=hmc_inv_pde)
@@ -130,6 +130,7 @@ def hmc_evolve(hmc_inv_pde: dict, num_of_iter: int, state: str, start_theta, ste
         x_data = np.zeros((hmc_inv_pde['kl_ndim'], 0))
         sol_data = np.zeros((n, 0))
         sol_grad_data = np.zeros((n, hmc_inv_pde['kl_ndim'], 0))
+        potential_data = np.zeros((1, 0))
     else:
         sampled_theta = np.zeros((hmc_inv_pde['kl_ndim'], num_of_iter))
 
@@ -168,6 +169,7 @@ def hmc_evolve(hmc_inv_pde: dict, num_of_iter: int, state: str, start_theta, ste
                 x_data = np.concatenate((x_data, proposed_theta.reshape((-1, 1))), axis=1)
                 sol_data = np.concatenate((sol_data, u.reshape((-1, 1))), axis=1)
                 sol_grad_data = np.concatenate((sol_grad_data, pu[:, :, np.newaxis]), axis=2)
+                potential_data = np.concatenate((potential_data, np.array([[proposed_potential]])), axis=1)
         else:
             acp_num.append(0)
         timer[i] = time.clock() - time_start
@@ -182,7 +184,7 @@ def hmc_evolve(hmc_inv_pde: dict, num_of_iter: int, state: str, start_theta, ste
             print('acceptance rate of latest 100 iterations %.2f' % (sum(acp_num[-100:]) / 100))
 
     if state == 'burnin':
-        return current_theta, acp_num, timer, x_data, sol_data, sol_grad_data
+        return current_theta, acp_num, timer, x_data, sol_data, sol_grad_data, potential_data
     else:
         return sampled_theta, acp_num, timer
 

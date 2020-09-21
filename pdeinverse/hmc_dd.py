@@ -224,7 +224,7 @@ def hmc_evolve(hmc_inv_pde: dict, num_of_iter: int, start_theta, net: SolutionMa
     HMC evolution using data-driven solver
     """
     timer = np.zeros(num_of_iter)
-    acp_num = [0]
+    acp_num = []
     n = hmc_inv_pde['kl_ndim']
     sampled_theta = np.zeros((n, num_of_iter))
     current_theta = copy.copy(start_theta)
