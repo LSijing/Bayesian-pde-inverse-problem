@@ -1,5 +1,7 @@
 from pdeinverse import elliptic, hmc, utils
 import numpy as np
+import scipy
+from scipy.sparse.linalg import spsolve
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -50,7 +52,7 @@ class GradientMap(nn.Module):
         y = self.out(y)
         return y
 
-def process_training_data(x_data, sol_data, sol_grad_data, mass_mat, num_sol_basis, num_grad_basis):
+def process_training_data(x_data, sol_data, sol_grad_data, mass_mat, num_sol_basis, num_grad_basis, grad_together=False):
     """
     input:
         x_data: (n_input, m), m samples, n_input dimension each
@@ -102,24 +104,45 @@ def process_training_data(x_data, sol_data, sol_grad_data, mass_mat, num_sol_bas
     assert phi_sol.shape == (n_sol, num_sol_basis)
 
     # gradient output (bases and coefficients, each partial derivative)
-    y_grad = np.zeros((num_grad_basis, n_input, m))
-    mean_y_grad = np.zeros((num_grad_basis, n_input, 1))
-    std_y_grad = np.zeros((num_grad_basis, n_input, 1))
-    mean_grad, phi_grad = np.zeros((n_sol, n_input, 1)), np.zeros((n_sol, n_input, num_grad_basis))
-    for i in range(n_input):
-        phi_grad_i, _ = utils.compute_PCA(sol_grad_data[:, i, :], mean=True, k=num_grad_basis, A=mass_mat, normalize=True)
-        assert phi_grad_i.shape == (n_sol, num_grad_basis+1)
-        mean_grad[:, i, :], phi_grad[:, i, :] = phi_grad_i[:, 0].reshape((-1, 1)), phi_grad_i[:, 1:]
-        y_grad_i = phi_grad[:, i, :].transpose() @ mass_mat @ (sol_grad_data[:, i, :] - mean_grad[:, i, :])
-        y_grad_i, mean_grad_i, std_grad_i = compute_mean_std(y_grad_i)
-        y_grad[:, i, :] = y_grad_i
-        mean_y_grad[:, i, :] = mean_grad_i
-        std_y_grad[:, i, :] = std_grad_i
-    assert y_grad.shape == (num_grad_basis, n_input, m)
-    assert mean_y_grad.shape == (num_grad_basis, n_input, 1)
-    assert std_y_grad.shape == (num_grad_basis, n_input, 1)
-    assert mean_grad.shape == (n_sol, n_input, 1)
-    assert phi_grad.shape == (n_sol, n_input, num_grad_basis)
+    if not grad_together:
+        y_grad = np.zeros((num_grad_basis, n_input, m))
+        mean_y_grad = np.zeros((num_grad_basis, n_input, 1))
+        std_y_grad = np.zeros((num_grad_basis, n_input, 1))
+        mean_grad, phi_grad = np.zeros((n_sol, n_input, 1)), np.zeros((n_sol, n_input, num_grad_basis))
+        for i in range(n_input):
+            phi_grad_i, _ = utils.compute_PCA(sol_grad_data[:, i, :], mean=True, k=num_grad_basis, A=mass_mat, normalize=True)
+            assert phi_grad_i.shape == (n_sol, num_grad_basis+1)
+            mean_grad[:, i, :], phi_grad[:, i, :] = phi_grad_i[:, 0].reshape((-1, 1)), phi_grad_i[:, 1:]
+            y_grad_i = phi_grad[:, i, :].transpose() @ mass_mat @ (sol_grad_data[:, i, :] - mean_grad[:, i, :])
+            y_grad_i, mean_grad_i, std_grad_i = compute_mean_std(y_grad_i)
+            y_grad[:, i, :] = y_grad_i
+            mean_y_grad[:, i, :] = mean_grad_i
+            std_y_grad[:, i, :] = std_grad_i
+        assert y_grad.shape == (num_grad_basis, n_input, m)
+        assert mean_y_grad.shape == (num_grad_basis, n_input, 1)
+        assert std_y_grad.shape == (num_grad_basis, n_input, 1)
+        assert mean_grad.shape == (n_sol, n_input, 1)
+        assert phi_grad.shape == (n_sol, n_input, num_grad_basis)
+    if grad_together:
+        y_grad = np.zeros((num_grad_basis, n_input, m))
+        mean_y_grad = np.zeros((num_grad_basis, n_input, 1))
+        std_y_grad = np.zeros((num_grad_basis, n_input, 1))
+        phi_grad_prime, _ = utils.compute_PCA(sol_grad_data.reshape((n_sol, -1)), mean=True, k=num_grad_basis, A=mass_mat,
+                                          normalize=True)
+        assert phi_grad_prime.shape == (n_sol, num_grad_basis + 1)
+        phi_grad = phi_grad_prime[:, 1:]
+        mean_grad = phi_grad_prime[:, 0:1]
+        for i in range(n_input):
+            y_grad_i = phi_grad.transpose() @ mass_mat @ (sol_grad_data[:, i, :] - mean_grad)
+            y_grad_i, mean_grad_i, std_grad_i = compute_mean_std(y_grad_i)
+            y_grad[:, i, :] = y_grad_i
+            mean_y_grad[:, i, :] = mean_grad_i
+            std_y_grad[:, i, :] = std_grad_i
+        assert y_grad.shape == (num_grad_basis, n_input, m)
+        assert mean_y_grad.shape == (num_grad_basis, n_input, 1)
+        assert std_y_grad.shape == (num_grad_basis, n_input, 1)
+        assert mean_grad.shape == (n_sol, 1)
+        assert phi_grad.shape == (n_sol, num_grad_basis)
 
     training_set = {'x': x, 'y_sol': y_sol, 'y_grad': y_grad}
     basis_set = {'mean_x': mean_x, 'std_x': std_x, 'mean_y_sol': mean_y_sol, 'std_y_sol': std_y_sol,
@@ -180,7 +203,7 @@ def trainit(net, x_train, y_train, opt='Adam', epochs=100, lr=0.02, num_iter=5):
     return net, train_time_series, train_loss_series, dev_loss_series
 
 
-def solve_via_data_driven(inputs, net: SolutionMap, dataset: dict, derivative=0, net_grad: list = None):
+def solve_via_data_driven(inputs, net: SolutionMap, dataset: dict, derivative=0, net_grad: GradientMap = None):
     x = torch.from_numpy((inputs - dataset['mean_x'].flatten()) / dataset['std_x'].flatten())
     y = net(x).detach().numpy().reshape((-1, 1))
     u = dataset['phi_sol'] @ (y * dataset['std_y_sol'] + dataset['mean_y_sol']) + dataset['mean_sol']
@@ -189,11 +212,58 @@ def solve_via_data_driven(inputs, net: SolutionMap, dataset: dict, derivative=0,
     if derivative == 1:
         (n_sol, num_kl, num_grad_basis) = dataset['phi_grad'].shape
         pu = np.zeros((n_sol, num_kl))
+        y_grad = net_grad(x).detach().numpy().reshape((num_grad_basis, num_kl), order='F')
         for i in range(num_kl):
-            y_grad = net_grad[i](x).detach().numpy().reshape((-1, 1))
-            du_i = dataset['phi_grad'][:, i, :] @ (y_grad * dataset['std_y_grad'][:, i, :] + dataset['mean_y_grad'][:, i, :]) + dataset['mean_grad'][:, i, :]
+            du_i = dataset['phi_grad'][:, i, :] @ (y_grad[:, i:i+1] * dataset['std_y_grad'][:, i, :] + dataset['mean_y_grad'][:, i, :]) + dataset['mean_grad'][:, i, :]
             pu[:, i] = du_i.flatten()
         return u, pu
+
+
+def process_basis_data(basis_data: dict, mass_mat: np.ndarray):
+    new_set = dict()
+    keys_to_modify = ['mean_grad', 'phi_grad']
+    for key in basis_data.keys():
+        if key not in keys_to_modify:
+            new_set[key] = basis_data[key]
+
+    n_sol, num_grad_basis = basis_data['mean_grad'].shape[0], basis_data['mean_grad'].shape[2]
+    new_set['mean_grad'] = np.mean(basis_data['mean_grad'], axis=1)
+    assert new_set['mean_grad'].shape == (n_sol, 1)
+    new_set['phi_grad'] = utils.compute_PCA(basis_data['phi_grad'].reshape((n_sol, -1), order='F'),
+                                               mean=False, k=num_grad_basis, A=mass_mat)[0][:, 1:]
+    assert new_set['phi_grad'].shape == (n_sol, num_grad_basis)
+    return new_set
+
+def solve_via_Galerkin(inputs, inv_pde: dict, dataset: dict, derivative=0):
+    tris, points = inv_pde['tris'], inv_pde['points']
+    free_node, fixed_node = inv_pde['free_node'], inv_pde['fixed_node']
+    kl_ndim = inv_pde['kl_ndim']
+    kl_modes = inv_pde['kl_modes']
+    kl_weights = inv_pde['kl_weights']
+    c = np.exp(((inputs * kl_weights) * kl_modes).sum(1))
+    stiff_mat = elliptic.compute_stiffness_matrix(tris=tris, points=points, coef_discrete_on_center=c)
+    A11 = stiff_mat.tocsr()[free_node, :][:, free_node]
+    n = free_node.size + fixed_node.size
+    u = np.zeros(n)
+    u[fixed_node] = inv_pde['g_D']
+    u[free_node] = spsolve(A11, (-stiff_mat.tocsr() @ u)[free_node])
+    if derivative == 0:
+        return u
+    if derivative == 1:
+        pu = np.zeros((n, kl_ndim))
+        A_reduced = dataset['phi_grad'][free_node, :].transpose() @ A11 @ dataset['phi_grad'][free_node, :]
+        for i in range(kl_ndim):
+            pc = c * kl_weights[i] * kl_modes[:, i]
+            pA = elliptic.compute_stiffness_matrix(tris=tris, points=points, coef_discrete_on_center=pc)
+            pbLag = -pA.tocsr() @ u
+            #            pu[:,i] = spsolve(A.tocsr()+self.robin_mat.tocsr(), pbLag.reshape((-1,1)) + self.robin_vec)
+            pu[:, i] = dataset['mean_grad'].flatten() + dataset['phi_grad'] @ scipy.linalg.solve(A_reduced, dataset['phi_grad'][free_node, :].transpose() @ pbLag[free_node])
+        return u, pu
+
+
+def compute_potential_via_Galerkin(inputs):
+    pass
+
 
 
 def compute_potential_via_data_driven(inputs, net: SolutionMap, net_grad: list, hmc_inv_pde: dict, dataset: dict, order=0, sol_required=False):
