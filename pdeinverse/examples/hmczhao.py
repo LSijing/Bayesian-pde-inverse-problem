@@ -6,7 +6,7 @@ np.random.seed(123)
 # problem definition
 N = 30
 Nob = 10
-num_kl = 20
+num_kl = 30
 pde = elliptic.compute_pde_dictionary(n=N)
 pde_dict = hmc.compute_inverse_pde_dictionary(pde, corr_length=0.2, noise_ob=0.1, var=1.0, sigma_theta=0.5, kl_ndim=num_kl)
 observe_mat = hmc.get_observation_operator(n=Nob, inv_pde=pde_dict)
@@ -18,8 +18,8 @@ hmc_inv_pde = hmc.compute_hmc_dictionary(inv_pde=pde_dict, observe_mat=observe_m
 
 leap_frog_step_num = 10
 step_size = 0.16
-total_iter_num = 500
-burn_in_num = 1000
+total_iter_num = 200000
+burn_in_num = 10000
 start_theta = np.zeros(num_kl)
 num_sol_basis = 20
 num_grad_basis = 40
