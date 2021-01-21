@@ -19,7 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def compute_inverse_pde_dictionary(pde: dict, var, corr_length, noise_ob, sigma_theta, kl_ndim):
+def compute_inverse_pde_dictionary(pde: dict, var, corr_length, noise_ob, sigma_theta, kl_ndim, corr_hetero=None):
     """
         Gaussian process with zero mean, Gaussian kernel.
         cov(x1,x2) = var^2 * exp{-||x1-x2||^2/(2*corr_length^2)}
@@ -32,8 +32,11 @@ def compute_inverse_pde_dictionary(pde: dict, var, corr_length, noise_ob, sigma_
     tmp = np.zeros((n, n))
     for k in range(d):
         pk = pde['center'][:, k:k + 1]
-        tmp = tmp + (np.tile(pk, (1, n)) - np.tile(pk.reshape((1, -1)), (n, 1))) ** 2
-    cov = var ** 2 * np.exp(-tmp / (2 * corr_length ** 2))
+        if corr_hetero is not None:
+            tmp = tmp + (np.tile(pk, (1, n)) - np.tile(pk.reshape((1, -1)), (n, 1))) ** 2 / (2 * corr_hetero[k] ** 2)
+        else:
+            tmp = tmp + (np.tile(pk, (1, n)) - np.tile(pk.reshape((1, -1)), (n, 1))) ** 2 / (2 * corr_length ** 2)
+    cov = var ** 2 * np.exp(-tmp)
     w, v = np.linalg.eigh(cov)
     w = w[::-1]
     v = v[:, ::-1]
