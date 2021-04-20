@@ -11,7 +11,7 @@ data = example1.read_burnin('burnin_data_2021_01_07_04.npz')
     data['theta_after_burnin'], data['x_data'], data['potential_data'], data['leap_frog_step_num'], \
     data['step_size'], data['num_sol_basis'], data['num_grad_basis'], \
     data['basis_data'], data['training_data'], data['hmc_inv_pde']
-total_iter_num = 500
+total_iter_num = 50000
 
 # train rns
 s = 1000
@@ -30,7 +30,7 @@ net_grad.double()
 net_grad, train_iter, train_lost, _ = hmc_dd.trainit(net_grad, training_data['x'], training_data['y_grad'].reshape((-1, training_data['y_grad'].shape[2]), order='F'),
                                                      opt='Adam', epochs=2000, lr=0.02, num_iter=5)
 
-for _ in range(2):
+for _ in range(5):
     # standard hmc
     sampled_theta, acp_num, timer = hmc.hmc_evolve(hmc_inv_pde=hmc_inv_pde, num_of_iter=total_iter_num, state='sample', start_theta=theta_after_burnin)
     np.savez(f'hmc_data{time.strftime("%Y_%m_%d_%H_%M_%S", time.gmtime())}', sampled_theta=sampled_theta, acp_num=acp_num, timer=timer)
