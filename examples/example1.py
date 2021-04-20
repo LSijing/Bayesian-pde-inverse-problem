@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 
-def set_problem(num_kl: int):
+def get_problem_settings(num_kl: int):
     N = 30
     Nob = 10
     pde = elliptic.compute_pde_dictionary(n=N)
@@ -17,7 +17,7 @@ def set_problem(num_kl: int):
     return N, Nob, num_kl, observe_mat, true_theta, u, y, hmc_inv_pde
 
 
-def set_algorithm_settings(num_kl: int):
+def get_algorithm_settings(num_kl: int):
     leap_frog_step_num = 10
     step_size = 0.16
     total_iter_num = 200000

@@ -5,8 +5,8 @@ import time
 
 # define the problem and set algorithm parameters
 num_kl = 25
-N, Nob, num_kl, observe_mat, true_theta, u, y, hmc_inv_pde = example1.set_problem(num_kl=num_kl)
-leap_frog_step_num, step_size, total_iter_num, burn_in_num, start_theta, num_sol_basis, num_grad_basis = example1.set_algorithm_settings(num_kl=num_kl)
+N, Nob, num_kl, observe_mat, true_theta, u, y, hmc_inv_pde = example1.get_problem_settings(num_kl=num_kl)
+leap_frog_step_num, step_size, total_iter_num, burn_in_num, start_theta, num_sol_basis, num_grad_basis = example1.get_algorithm_settings(num_kl=num_kl)
 
 # burn-in, collect and process training data
 print('start burn-in')
