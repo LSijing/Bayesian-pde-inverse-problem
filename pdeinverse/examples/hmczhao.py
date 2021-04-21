@@ -2,7 +2,6 @@ from pdeinverse import hmc, elliptic, utils, hmc_dd
 import numpy as np
 import time
 
-np.random.seed(123)
 # problem definition
 N = 30
 Nob = 10
@@ -30,11 +29,11 @@ mass_mat = elliptic.compute_mass_matrix(tris=hmc_inv_pde['tris'], points=hmc_inv
 training_data, basis_data = hmc_dd.process_training_data(x_data, sol_data, sol_grad_data, mass_mat=mass_mat, num_sol_basis=num_sol_basis, num_grad_basis=num_grad_basis)
 
 # save burn-in data into '.npz' file for data-driven use
-np.savez('burnin_data_'+time.strftime("%Y_%m_%d_%H", time.gmtime()), theta_after_burnin=theta_after_burnin, acp_num_burnin=acp_num_burnin, timer_burnin=timer_burnin,
+np.savez('burnin_data_%dd_'%num_kl+time.strftime("%Y_%m_%d_%H", time.gmtime()), theta_after_burnin=theta_after_burnin, acp_num_burnin=acp_num_burnin, timer_burnin=timer_burnin,
 x_data=x_data, sol_data=sol_data, sol_grad_data=sol_grad_data, potential_data=potential_data, leap_frog_step_num=leap_frog_step_num, step_size=step_size,
 burn_in_num=burn_in_num, num_sol_basis=num_sol_basis, num_grad_basis=num_grad_basis, basis_data=basis_data, training_data=training_data,
 hmc_inv_pde=hmc_inv_pde)
 
 # standard hmc
-sampled_theta, acp_num, timer = hmc.hmc_evolve(hmc_inv_pde=hmc_inv_pde, num_of_iter=total_iter_num, state='sample', start_theta=theta_after_burnin)
-np.savez('hmc_data'+time.strftime("%Y_%m_%d_%H_%M_%S", time.gmtime()), sampled_theta=sampled_theta, acp_num=acp_num, timer=timer)
+# sampled_theta, acp_num, timer = hmc.hmc_evolve(hmc_inv_pde=hmc_inv_pde, num_of_iter=total_iter_num, state='sample', start_theta=theta_after_burnin)
+# np.savez('hmc_data'+time.strftime("%Y_%m_%d_%H_%M_%S", time.gmtime()), sampled_theta=sampled_theta, acp_num=acp_num, timer=timer)
